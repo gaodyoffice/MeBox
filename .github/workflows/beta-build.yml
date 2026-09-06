@@ -19,7 +19,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 env:
@@ -131,3 +131,49 @@ jobs:
             VERSION=${{ steps.version.outputs.full_version }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # 3) Beta Release（创建 Release 并上传二进制）
+  # ─────────────────────────────────────────────────────────────────────────────
+  release-beta:
+    name: Create beta release
+    needs: test-and-build
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve beta version
+        id: version
+        run: |
+          BASE_VERSION=$(cat VERSION 2>/dev/null || echo "0.0.0")
+          SHA_SHORT=${GITHUB_SHA:0:7}
+          echo "full_version=${BASE_VERSION}-beta.${SHA_SHORT}" >> "$GITHUB_OUTPUT"
+          echo "tag=beta-${BASE_VERSION}-${SHA_SHORT}" >> "$GITHUB_OUTPUT"
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: mebox-beta-binaries
+          path: dist/
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: "Beta ${{ steps.version.outputs.full_version }}"
+          body: |
+            ## Beta ${{ steps.version.outputs.full_version }}
+
+            二进制文件：
+            - `mebox-beta-linux-amd64` - Linux x64
+            - `mebox-beta-linux-arm64` - Linux ARM64
+            - `mebox-beta-windows-amd64.exe` - Windows x64
+
+            > ⚠️ Beta 版本仅供测试使用
+          draft: false
+          prerelease: true
+          files: |
+            dist/mebox-beta-linux-amd64
+            dist/mebox-beta-linux-arm64
+            dist/mebox-beta-windows-amd64.exe
