@@ -4,6 +4,7 @@ import {
   settingOn,
 } from './autoOrganizeModel'
 import { strmAPI } from '../api/strm'
+import { StrmDirBrowserDialog } from './StrmDialogs'
 
 type ConfigChangeHandler = (key: keyof AutoOrganizeConfig, value: string) => void
 
@@ -203,6 +204,7 @@ function NumberSetting({
 export function AutoOrganizeCloudTab({ config, onConfigChange }: AutoOrganizeTabProps) {
   const [accounts, setAccounts] = useState<Array<{ id: string; name: string; provider: string }>>([])
   const [loadingAccounts, setLoadingAccounts] = useState(true)
+  const [browseTarget, setBrowseTarget] = useState<'source' | 'target' | null>(null)
 
   useEffect(() => {
     strmAPI.listAccounts()
@@ -217,6 +219,8 @@ export function AutoOrganizeCloudTab({ config, onConfigChange }: AutoOrganizeTab
     { value: 'never', label: '永不覆盖' },
     { value: 'latest', label: '按修改时间' },
   ]
+
+  const selectedAccountId = browseTarget === 'source' ? config.cloudSourceAccountId : config.cloudTargetAccountId
 
   return (
     <div className="space-y-4">
@@ -247,12 +251,22 @@ export function AutoOrganizeCloudTab({ config, onConfigChange }: AutoOrganizeTab
           </label>
           <label className="space-y-1">
             <span className="text-xs text-ink-50">源目录路径</span>
-            <input
-              className="input-base w-full font-mono text-xs"
-              placeholder="cloud://openlist/路径"
-              value={config.cloudSourcePath}
-              onChange={(event) => onConfigChange('cloudSourcePath', event.target.value)}
-            />
+            <div className="flex gap-2">
+              <input
+                className="input-base w-full font-mono text-xs"
+                placeholder="例如 /下载目录"
+                value={config.cloudSourcePath}
+                onChange={(event) => onConfigChange('cloudSourcePath', event.target.value)}
+              />
+              <button
+                type="button"
+                className="rounded-xl border border-gray-200 px-3 text-xs text-ink-100 hover:border-primary-400/40"
+                disabled={!config.cloudSourceAccountId}
+                onClick={() => setBrowseTarget('source')}
+              >
+                浏览
+              </button>
+            </div>
           </label>
         </div>
 
@@ -278,12 +292,22 @@ export function AutoOrganizeCloudTab({ config, onConfigChange }: AutoOrganizeTab
           </label>
           <label className="space-y-1">
             <span className="text-xs text-ink-50">目标目录路径</span>
-            <input
-              className="input-base w-full font-mono text-xs"
-              placeholder="cloud://openlist/路径"
-              value={config.cloudTargetPath}
-              onChange={(event) => onConfigChange('cloudTargetPath', event.target.value)}
-            />
+            <div className="flex gap-2">
+              <input
+                className="input-base w-full font-mono text-xs"
+                placeholder="例如 /媒体库/电影"
+                value={config.cloudTargetPath}
+                onChange={(event) => onConfigChange('cloudTargetPath', event.target.value)}
+              />
+              <button
+                type="button"
+                className="rounded-xl border border-gray-200 px-3 text-xs text-ink-100 hover:border-primary-400/40"
+                disabled={!config.cloudTargetAccountId}
+                onClick={() => setBrowseTarget('target')}
+              >
+                浏览
+              </button>
+            </div>
           </label>
         </div>
       </div>
@@ -311,6 +335,22 @@ export function AutoOrganizeCloudTab({ config, onConfigChange }: AutoOrganizeTab
           </select>
         </label>
       </div>
+
+      {browseTarget && selectedAccountId && (
+        <StrmDirBrowserDialog
+          accountId={selectedAccountId}
+          initialDir={browseTarget === 'source' ? config.cloudSourcePath : config.cloudTargetPath}
+          onSelect={(_id, _name, fullPath) => {
+            if (browseTarget === 'source') {
+              onConfigChange('cloudSourcePath', fullPath || '')
+            } else {
+              onConfigChange('cloudTargetPath', fullPath || '')
+            }
+            setBrowseTarget(null)
+          }}
+          onClose={() => setBrowseTarget(null)}
+        />
+      )}
     </div>
   )
 }

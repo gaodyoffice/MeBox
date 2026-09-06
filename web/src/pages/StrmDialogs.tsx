@@ -986,7 +986,7 @@ function chainFullPath(chain: { id: string; name: string }[]): string {
 
 // ─── 远端目录浏览选择器 ───────────────────────────────────────────────────────
 
-function StrmDirBrowserDialog({
+export function StrmDirBrowserDialog({
   accountId,
   initialDir,
   onSelect,
