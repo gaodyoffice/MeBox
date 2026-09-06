@@ -66,6 +66,7 @@ type Container struct {
 	Strm             *StrmService
 	Database         *DatabaseAdminService
 	FFTools          *FFmpegToolsService
+	CloudOrganize    *cloudOrganizeService
 
 	stopCtx    context.Context
 	stopCancel context.CancelFunc

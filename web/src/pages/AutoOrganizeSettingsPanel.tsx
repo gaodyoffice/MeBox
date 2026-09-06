@@ -8,7 +8,10 @@ import {
   AutoOrganizeBasicTab,
   AutoOrganizeNamingTab,
   AutoOrganizeScrapeTab,
+  AutoOrganizeCloudTab,
 } from './AutoOrganizeSettingsTabs'
+import { CloudOrganizePanel } from './CloudOrganizePanel'
+import { CloudOrganizeHistory } from './CloudOrganizeHistory'
 
 type AutoOrganizeSettingsPanelProps = {
   config: AutoOrganizeConfig
@@ -29,6 +32,7 @@ const AUTO_ORGANIZE_TABS: Array<[AutoOrganizeTab, string]> = [
   ['basic', '基础设置'],
   ['naming', '命名规则'],
   ['scrape', '刮削联动'],
+  ['cloud', '云盘整理'],
 ]
 
 export function AutoOrganizeSettingsPanel({
@@ -114,6 +118,13 @@ export function AutoOrganizeSettingsPanel({
       )}
       {activeTab === 'scrape' && (
         <AutoOrganizeScrapeTab config={config} onConfigChange={onConfigChange} />
+      )}
+      {activeTab === 'cloud' && (
+        <div className="space-y-6">
+          <AutoOrganizeCloudTab config={config} onConfigChange={onConfigChange} />
+          <CloudOrganizePanel config={config} />
+          <CloudOrganizeHistory />
+        </div>
       )}
     </section>
   )

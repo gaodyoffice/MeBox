@@ -1,7 +1,9 @@
+import { useState, useEffect } from 'react'
 import {
   type AutoOrganizeConfig,
   settingOn,
 } from './autoOrganizeModel'
+import { strmAPI } from '../api/strm'
 
 type ConfigChangeHandler = (key: keyof AutoOrganizeConfig, value: string) => void
 
@@ -195,5 +197,120 @@ function NumberSetting({
         onChange={(event) => onConfigChange(settingKey, event.target.value)}
       />
     </label>
+  )
+}
+
+export function AutoOrganizeCloudTab({ config, onConfigChange }: AutoOrganizeTabProps) {
+  const [accounts, setAccounts] = useState<Array<{ id: string; name: string; provider: string }>>([])
+  const [loadingAccounts, setLoadingAccounts] = useState(true)
+
+  useEffect(() => {
+    strmAPI.listAccounts()
+      .then((rows) => setAccounts(rows.filter((a) => a.provider !== 'emby_remote')))
+      .catch(() => undefined)
+      .finally(() => setLoadingAccounts(false))
+  }, [])
+
+  const OVERWRITE_MODES = [
+    { value: 'size', label: '按大小判断' },
+    { value: 'always', label: '始终覆盖' },
+    { value: 'never', label: '永不覆盖' },
+    { value: 'latest', label: '按修改时间' },
+  ]
+
+  return (
+    <div className="space-y-4">
+      <p className="text-xs text-sand-500">
+        云盘整理用于在同一个云盘内移动文件（同盘移动），不支持跨盘或跨存储类型移动。
+      </p>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <div className="space-y-3 rounded-2xl border border-gray-200 p-4">
+          <h4 className="text-sm font-semibold text-ink-600">源目录</h4>
+          <label className="space-y-1">
+            <span className="text-xs text-ink-50">云盘账号</span>
+            <select
+              className="input-base w-full"
+              value={config.cloudSourceAccountId}
+              onChange={(event) => {
+                const accountId = event.target.value
+                const account = accounts.find((a) => a.id === accountId)
+                onConfigChange('cloudSourceAccountId', accountId)
+                if (account) onConfigChange('cloudSourceProvider', account.provider)
+              }}
+            >
+              <option value="">{loadingAccounts ? '加载中...' : '请选择账号'}</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>{a.name} ({a.provider})</option>
+              ))}
+            </select>
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs text-ink-50">源目录路径</span>
+            <input
+              className="input-base w-full font-mono text-xs"
+              placeholder="cloud://openlist/路径"
+              value={config.cloudSourcePath}
+              onChange={(event) => onConfigChange('cloudSourcePath', event.target.value)}
+            />
+          </label>
+        </div>
+
+        <div className="space-y-3 rounded-2xl border border-gray-200 p-4">
+          <h4 className="text-sm font-semibold text-ink-600">目标目录</h4>
+          <label className="space-y-1">
+            <span className="text-xs text-ink-50">云盘账号</span>
+            <select
+              className="input-base w-full"
+              value={config.cloudTargetAccountId}
+              onChange={(event) => {
+                const accountId = event.target.value
+                const account = accounts.find((a) => a.id === accountId)
+                onConfigChange('cloudTargetAccountId', accountId)
+                if (account) onConfigChange('cloudTargetProvider', account.provider)
+              }}
+            >
+              <option value="">{loadingAccounts ? '加载中...' : '请选择账号'}</option>
+              {accounts.map((a) => (
+                <option key={a.id} value={a.id}>{a.name} ({a.provider})</option>
+              ))}
+            </select>
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs text-ink-50">目标目录路径</span>
+            <input
+              className="input-base w-full font-mono text-xs"
+              placeholder="cloud://openlist/路径"
+              value={config.cloudTargetPath}
+              onChange={(event) => onConfigChange('cloudTargetPath', event.target.value)}
+            />
+          </label>
+        </div>
+      </div>
+
+      <div className="grid gap-3 lg:grid-cols-2">
+        <label className="space-y-1">
+          <span className="text-xs text-ink-50">视频扩展名（逗号分隔）</span>
+          <input
+            className="input-base w-full font-mono text-xs"
+            placeholder="mkv,mp4,avi"
+            value={config.cloudVideoExt}
+            onChange={(event) => onConfigChange('cloudVideoExt', event.target.value)}
+          />
+        </label>
+        <label className="space-y-1">
+          <span className="text-xs text-ink-50">覆盖策略</span>
+          <select
+            className="input-base w-full"
+            value={config.cloudOverwriteMode}
+            onChange={(event) => onConfigChange('cloudOverwriteMode', event.target.value)}
+          >
+            {OVERWRITE_MODES.map((mode) => (
+              <option key={mode.value} value={mode.value}>{mode.label}</option>
+            ))}
+          </select>
+        </label>
+      </div>
+    </div>
   )
 }

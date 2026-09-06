@@ -11,6 +11,7 @@ import (
 	"github.com/truewhile/MeBox/internal/helper"
 	"github.com/truewhile/MeBox/internal/model"
 	"github.com/truewhile/MeBox/internal/repository"
+	"github.com/truewhile/MeBox/internal/service/cloud"
 )
 
 type serviceContainerBuilder struct {
@@ -96,6 +97,13 @@ func (b *serviceContainerBuilder) initContentServices() {
 	b.c.Organizer = NewOrganizerService(b.cfg, b.log, b.repos)
 	b.c.Organizer.SetProbe(b.c.FFprobe)
 	b.c.Organizer.SetScraper(b.c.Scraper)
+	// 创建云盘账号查找适配器
+	cloudAccountFinder := &cloud.AccountFinderAdapter{
+		FindByIDFunc: func(ctx context.Context, id string) (cloud.Account, error) {
+			return b.repos.StrmAccount.FindByID(ctx, id)
+		},
+	}
+	b.c.CloudOrganize = newCloudOrganizeService(b.repos.CloudOrganizeHistory, cloud.NewAccountConfigProvider(cloudAccountFinder, b.c.Crypto, nil))
 	b.c.Transcoder = NewTranscoderService(b.cfg, b.log, b.repos, b.c.WSHub)
 	b.c.Scan = NewScannerService(b.cfg, b.log, b.repos, b.c.WSHub, b.c.FFprobe, b.c.Scraper)
 	b.c.Scan.SetOrganizer(b.c.Organizer)

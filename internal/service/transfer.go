@@ -12,11 +12,14 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/truewhile/MeBox/internal/service/cloud"
 )
 
 var linkFile = os.Link
@@ -182,4 +185,52 @@ func transferDirectoryTree(src, dst string, mode TransferMode) error {
 		return err
 	}
 	return nil
+}
+
+// ─── 云盘文件操作 ─────────────────────────────────────────────────────────────
+
+// CloudOverwriteMode 云盘文件覆盖策略。
+type CloudOverwriteMode string
+
+const (
+	CloudOverwriteAlways CloudOverwriteMode = "always" // 总是覆盖
+	CloudOverwriteSize   CloudOverwriteMode = "size"   // 按大小覆盖（新文件更大时覆盖，默认）
+	CloudOverwriteNever  CloudOverwriteMode = "never"  // 从不覆盖
+	CloudOverwriteLatest CloudOverwriteMode = "latest" // 仅保留最新版本
+)
+
+// CloudMovableProvider 云盘移动接口（由 cloud.MovableProvider 实现）。
+type CloudMovableProvider interface {
+	List(ctx context.Context, dirID string) ([]cloud.FileEntry, error)
+	Move(ctx context.Context, ref, targetDir, name string) (*cloud.FileEntry, error)
+}
+
+// CheckCloudOverwrite 检查云盘文件覆盖策略。
+// 返回 true 表示应该覆盖/移动，false 表示跳过。
+func CheckCloudOverwrite(srcEntry, dstEntry *cloud.FileEntry, mode CloudOverwriteMode) bool {
+	if dstEntry == nil {
+		// 目标不存在，直接移动
+		return true
+	}
+	switch mode {
+	case CloudOverwriteAlways:
+		return true
+	case CloudOverwriteSize:
+		// 新文件更大时覆盖
+		return srcEntry.Size > dstEntry.Size
+	case CloudOverwriteLatest:
+		// 保留最新版本（总是覆盖）
+		return true
+	default: // CloudOverwriteNever
+		return false
+	}
+}
+
+// TransferCloudMove 云盘文件移动（同盘）。
+// srcRef: 源文件引用（路径或 ID）
+// dstDir: 目标目录路径
+// dstName: 目标文件名
+func TransferCloudMove(ctx context.Context, provider CloudMovableProvider, srcRef, dstDir, dstName string) error {
+	_, err := provider.Move(ctx, srcRef, dstDir, dstName)
+	return err
 }

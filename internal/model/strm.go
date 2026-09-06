@@ -28,6 +28,15 @@ type StrmAccount struct {
 	LastTestOK     bool       `json:"last_test_ok"`
 }
 
+// GetID 实现 cloud.Account 接口。
+func (a *StrmAccount) GetID() string { return a.ID }
+
+// GetProvider 实现 cloud.Account 接口。
+func (a *StrmAccount) GetProvider() string { return a.Provider }
+
+// GetConfig 实现 cloud.Account 接口。
+func (a *StrmAccount) GetConfig() string { return a.Config }
+
 // StrmSyncPath 是一条 STRM 同步目录配置：把网盘（或本地）某目录下的视频生成
 // .strm 文件写到 LocalPath，元数据按需下载/上传。
 type StrmSyncPath struct {

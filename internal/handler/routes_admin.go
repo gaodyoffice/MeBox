@@ -146,6 +146,13 @@ func registerAdminOrganizerRoutes(admin *gin.RouterGroup, svc *service.Container
 	admin.POST("/libraries/:id/organize", organizeLibraryHandler(svc))
 	admin.GET("/organize/sources", organizeSourcesHandler(svc))
 	admin.POST("/organize/source", organizeDirectoryHandler(svc))
+	// 云盘整理
+	admin.POST("/organize/cloud/start", cloudOrganizeStartHandler(svc))
+	admin.GET("/organize/cloud/progress", cloudOrganizeProgressHandler(svc))
+	admin.POST("/organize/cloud/cancel", cloudOrganizeCancelHandler(svc))
+	admin.GET("/organize/cloud/history", cloudOrganizeHistoryHandler(svc))
+	admin.DELETE("/organize/cloud/history", cloudOrganizeClearHistoryHandler(svc))
+	admin.DELETE("/organize/cloud/history/old", cloudOrganizeClearOldHistoryHandler(svc))
 }
 
 func registerAdminAPIConfigRoutes(admin *gin.RouterGroup, svc *service.Container) {

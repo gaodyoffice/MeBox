@@ -58,5 +58,6 @@ func AllModels() []interface{} {
 		&StrmDirCache{},
 		&ScrapeTask{},
 		&EmbyMount{},
+		&CloudOrganizeHistory{},
 	}
 }

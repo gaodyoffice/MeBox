@@ -17,6 +17,15 @@ export type AutoOrganizeConfig = {
   scrapeLanguage: string
   scrapeDelayMinMs: string
   scrapeDelayMaxMs: string
+  // 云盘整理配置
+  cloudSourceAccountId: string
+  cloudSourceProvider: string
+  cloudSourcePath: string
+  cloudTargetAccountId: string
+  cloudTargetProvider: string
+  cloudTargetPath: string
+  cloudVideoExt: string
+  cloudOverwriteMode: string
 }
 
 export const AUTO_ORGANIZE_DEFAULTS: AutoOrganizeConfig = {
@@ -36,6 +45,15 @@ export const AUTO_ORGANIZE_DEFAULTS: AutoOrganizeConfig = {
   scrapeLanguage: 'zh-CN',
   scrapeDelayMinMs: '250',
   scrapeDelayMaxMs: '500',
+  // 云盘整理默认配置
+  cloudSourceAccountId: '',
+  cloudSourceProvider: 'openlist',
+  cloudSourcePath: '',
+  cloudTargetAccountId: '',
+  cloudTargetProvider: 'openlist',
+  cloudTargetPath: '',
+  cloudVideoExt: 'mkv,mp4,avi,rmvb,rm,mov,ts,wmv,flv,m4v,iso,mpg,mpeg,webm',
+  cloudOverwriteMode: 'size',
 }
 
 export const AUTO_ORGANIZE_KEYS: Record<keyof AutoOrganizeConfig, string> = {
@@ -55,9 +73,18 @@ export const AUTO_ORGANIZE_KEYS: Record<keyof AutoOrganizeConfig, string> = {
   scrapeLanguage: 'scrape.language',
   scrapeDelayMinMs: 'scrape.delay_min_ms',
   scrapeDelayMaxMs: 'scrape.delay_max_ms',
+  // 云盘整理配置键
+  cloudSourceAccountId: 'organize.cloud_source_account_id',
+  cloudSourceProvider: 'organize.cloud_source_provider',
+  cloudSourcePath: 'organize.cloud_source_path',
+  cloudTargetAccountId: 'organize.cloud_target_account_id',
+  cloudTargetProvider: 'organize.cloud_target_provider',
+  cloudTargetPath: 'organize.cloud_target_path',
+  cloudVideoExt: 'organize.cloud_video_ext',
+  cloudOverwriteMode: 'organize.cloud_overwrite_mode',
 }
 
-export type AutoOrganizeTab = 'basic' | 'naming' | 'scrape'
+export type AutoOrganizeTab = 'basic' | 'naming' | 'scrape' | 'cloud'
 
 export function mergeAutoOrganizeSettings(rows: Setting[]): AutoOrganizeConfig {
   const idx = settingIndex(rows)
@@ -78,6 +105,15 @@ export function mergeAutoOrganizeSettings(rows: Setting[]): AutoOrganizeConfig {
     scrapeLanguage: idx[AUTO_ORGANIZE_KEYS.scrapeLanguage] ?? AUTO_ORGANIZE_DEFAULTS.scrapeLanguage,
     scrapeDelayMinMs: idx[AUTO_ORGANIZE_KEYS.scrapeDelayMinMs] ?? AUTO_ORGANIZE_DEFAULTS.scrapeDelayMinMs,
     scrapeDelayMaxMs: idx[AUTO_ORGANIZE_KEYS.scrapeDelayMaxMs] ?? AUTO_ORGANIZE_DEFAULTS.scrapeDelayMaxMs,
+    // 云盘整理配置
+    cloudSourceAccountId: idx[AUTO_ORGANIZE_KEYS.cloudSourceAccountId] ?? AUTO_ORGANIZE_DEFAULTS.cloudSourceAccountId,
+    cloudSourceProvider: idx[AUTO_ORGANIZE_KEYS.cloudSourceProvider] ?? AUTO_ORGANIZE_DEFAULTS.cloudSourceProvider,
+    cloudSourcePath: idx[AUTO_ORGANIZE_KEYS.cloudSourcePath] ?? AUTO_ORGANIZE_DEFAULTS.cloudSourcePath,
+    cloudTargetAccountId: idx[AUTO_ORGANIZE_KEYS.cloudTargetAccountId] ?? AUTO_ORGANIZE_DEFAULTS.cloudTargetAccountId,
+    cloudTargetProvider: idx[AUTO_ORGANIZE_KEYS.cloudTargetProvider] ?? AUTO_ORGANIZE_DEFAULTS.cloudTargetProvider,
+    cloudTargetPath: idx[AUTO_ORGANIZE_KEYS.cloudTargetPath] ?? AUTO_ORGANIZE_DEFAULTS.cloudTargetPath,
+    cloudVideoExt: idx[AUTO_ORGANIZE_KEYS.cloudVideoExt] ?? AUTO_ORGANIZE_DEFAULTS.cloudVideoExt,
+    cloudOverwriteMode: idx[AUTO_ORGANIZE_KEYS.cloudOverwriteMode] ?? AUTO_ORGANIZE_DEFAULTS.cloudOverwriteMode,
   }
 }
 

@@ -4,6 +4,7 @@ package handler
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 
@@ -138,4 +139,92 @@ func organizePipeline(svc *service.Container) *service.OrganizePipelineService {
 		return svc.OrganizePipeline
 	}
 	return service.NewOrganizePipelineService(svc.Log, svc.Repo, svc.Organizer, svc.Scan, svc.Tasks)
+}
+
+// ── 云盘整理 API ──────────────────────────────────────────────────────────────
+
+type cloudOrganizeStartReq struct {
+	SourceAccountID string `json:"source_account_id"`
+	SourceProvider  string `json:"source_provider"`
+	SourcePath      string `json:"source_path"`
+	TargetAccountID string `json:"target_account_id"`
+	TargetProvider  string `json:"target_provider"`
+	TargetPath      string `json:"target_path"`
+	VideoExt        string `json:"video_ext"`
+	OverwriteMode   string `json:"overwrite_mode"`
+}
+
+func cloudOrganizeStartHandler(svc *service.Container) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var req cloudOrganizeStartReq
+		if err := c.ShouldBindJSON(&req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		config := service.CloudOrganizeConfig{
+			SourceAccountID: req.SourceAccountID,
+			SourceProvider:  req.SourceProvider,
+			SourcePath:      req.SourcePath,
+			TargetAccountID: req.TargetAccountID,
+			TargetProvider:  req.TargetProvider,
+			TargetPath:      req.TargetPath,
+			VideoExt:        req.VideoExt,
+			OverwriteMode:   req.OverwriteMode,
+		}
+		result, err := svc.CloudOrganize.Organize(c.Request.Context(), config)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, result)
+	}
+}
+
+func cloudOrganizeProgressHandler(svc *service.Container) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		progress := svc.CloudOrganize.GetProgress()
+		c.JSON(http.StatusOK, progress)
+	}
+}
+
+func cloudOrganizeCancelHandler(svc *service.Container) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		svc.CloudOrganize.Cancel()
+		c.JSON(http.StatusOK, gin.H{"status": "cancelled"})
+	}
+}
+
+func cloudOrganizeHistoryHandler(svc *service.Container) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		history, err := svc.Repo.CloudOrganizeHistory.List(c.Request.Context(), 30)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, history)
+	}
+}
+
+func cloudOrganizeClearHistoryHandler(svc *service.Container) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		count, err := svc.Repo.CloudOrganizeHistory.DeleteAll(c.Request.Context())
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"count": count})
+	}
+}
+
+func cloudOrganizeClearOldHistoryHandler(svc *service.Container) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// 清理 30 天前的历史
+		threshold := time.Now().AddDate(0, 0, -30)
+		count, err := svc.Repo.CloudOrganizeHistory.DeleteBefore(c.Request.Context(), threshold)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{"count": count})
+	}
 }
