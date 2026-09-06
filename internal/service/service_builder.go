@@ -165,6 +165,7 @@ func (b *serviceContainerBuilder) initAccessAndStorageServices() {
 	)
 	b.c.Scheduler.SetTaskTracker(b.c.Tasks)
 	b.c.Scheduler.SetOrganizePipeline(b.c.OrganizePipeline)
+	b.c.Scheduler.SetCloudOrganize(b.c.CloudOrganize)
 	b.c.Scheduler.SetImagesMaxSizeMBProvider(func() int {
 		if b.cfg == nil {
 			return 0

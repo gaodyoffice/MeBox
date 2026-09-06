@@ -26,6 +26,10 @@ export type AutoOrganizeConfig = {
   cloudTargetPath: string
   cloudVideoExt: string
   cloudOverwriteMode: string
+  // 云盘整理定时配置
+  cloudAuto: string
+  cloudCron: string
+  cloudIntervalSeconds: string
 }
 
 export const AUTO_ORGANIZE_DEFAULTS: AutoOrganizeConfig = {
@@ -54,6 +58,10 @@ export const AUTO_ORGANIZE_DEFAULTS: AutoOrganizeConfig = {
   cloudTargetPath: '',
   cloudVideoExt: 'mkv,mp4,avi,rmvb,rm,mov,ts,wmv,flv,m4v,iso,mpg,mpeg,webm',
   cloudOverwriteMode: 'size',
+  // 云盘整理定时默认配置
+  cloudAuto: 'false',
+  cloudCron: '',
+  cloudIntervalSeconds: '1800',
 }
 
 export const AUTO_ORGANIZE_KEYS: Record<keyof AutoOrganizeConfig, string> = {
@@ -82,6 +90,10 @@ export const AUTO_ORGANIZE_KEYS: Record<keyof AutoOrganizeConfig, string> = {
   cloudTargetPath: 'organize.cloud_target_path',
   cloudVideoExt: 'organize.cloud_video_ext',
   cloudOverwriteMode: 'organize.cloud_overwrite_mode',
+  // 云盘整理定时配置键
+  cloudAuto: 'organize.cloud_auto',
+  cloudCron: 'organize.cloud_cron',
+  cloudIntervalSeconds: 'organize.cloud_interval_seconds',
 }
 
 export type AutoOrganizeTab = 'basic' | 'naming' | 'scrape' | 'cloud'
@@ -114,6 +126,10 @@ export function mergeAutoOrganizeSettings(rows: Setting[]): AutoOrganizeConfig {
     cloudTargetPath: idx[AUTO_ORGANIZE_KEYS.cloudTargetPath] ?? AUTO_ORGANIZE_DEFAULTS.cloudTargetPath,
     cloudVideoExt: idx[AUTO_ORGANIZE_KEYS.cloudVideoExt] ?? AUTO_ORGANIZE_DEFAULTS.cloudVideoExt,
     cloudOverwriteMode: idx[AUTO_ORGANIZE_KEYS.cloudOverwriteMode] ?? AUTO_ORGANIZE_DEFAULTS.cloudOverwriteMode,
+    // 云盘整理定时配置
+    cloudAuto: idx[AUTO_ORGANIZE_KEYS.cloudAuto] ?? AUTO_ORGANIZE_DEFAULTS.cloudAuto,
+    cloudCron: idx[AUTO_ORGANIZE_KEYS.cloudCron] ?? AUTO_ORGANIZE_DEFAULTS.cloudCron,
+    cloudIntervalSeconds: idx[AUTO_ORGANIZE_KEYS.cloudIntervalSeconds] ?? AUTO_ORGANIZE_DEFAULTS.cloudIntervalSeconds,
   }
 }
 

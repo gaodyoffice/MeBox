@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -156,6 +157,153 @@ func (s *SchedulerService) organizeSourceInterval(ctx context.Context) time.Dura
 		return fallback
 	}
 	v, err := s.repo.Setting.Get(ctx, "organize.interval_seconds")
+	if err != nil {
+		return fallback
+	}
+	seconds, err := strconv.Atoi(strings.TrimSpace(v))
+	if err != nil || seconds <= 0 {
+		return fallback
+	}
+	if seconds < 60 {
+		seconds = 60
+	}
+	return time.Duration(seconds) * time.Second
+}
+
+// ── 云盘整理定时任务 ──────────────────────────────────────────────────────────
+
+// cloudOrganizeLoop 支持 cron 和间隔两种调度模式。
+// cron 优先级高于间隔：若 cron 非空则按 cron 调度，否则按 interval 调度。
+func (s *SchedulerService) cloudOrganizeLoop(ctx context.Context) {
+	ticker := time.NewTicker(60 * time.Second)
+	defer ticker.Stop()
+	last := time.Now().Truncate(time.Minute)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-s.stopCh:
+			return
+		case now := <-ticker.C:
+			if s.cloudOrganize == nil {
+				last = now
+				continue
+			}
+			if !s.cloudOrganizeAutoEnabled(ctx) {
+				last = now
+				continue
+			}
+			now = now.Truncate(time.Minute)
+			// 检查 cron 模式
+			cronExpr := s.cloudOrganizeCron(ctx)
+			if strings.TrimSpace(cronExpr) != "" {
+				// cron 模式：逐分钟回放
+				due := make([]time.Time, 0, 2)
+				for m := last.Add(time.Minute); !m.After(now); m = m.Add(time.Minute) {
+					due = append(due, m)
+				}
+				last = now
+				if len(due) == 0 {
+					continue
+				}
+				matched := false
+				for _, m := range due {
+					if cronMatches(cronExpr, m) {
+						matched = true
+						break
+					}
+				}
+				if !matched {
+					continue
+				}
+				s.runCloudOrganize(ctx)
+			} else {
+				// 间隔模式
+				last = now
+				interval := s.cloudOrganizeInterval(ctx)
+				if interval <= 0 {
+					continue
+				}
+				lastRunStr, _ := s.repo.Setting.Get(ctx, "cloud.organize.last_run")
+				var lastRun time.Time
+				if t, err := time.Parse(time.RFC3339, strings.TrimSpace(lastRunStr)); err == nil {
+					lastRun = t
+				}
+				if now.Sub(lastRun) >= interval {
+					s.runCloudOrganize(ctx)
+					_ = s.repo.Setting.Set(ctx, "cloud.organize.last_run", now.Format(time.RFC3339))
+				}
+			}
+		}
+	}
+}
+
+func (s *SchedulerService) runCloudOrganize(ctx context.Context) {
+	if s.cloudOrganize == nil {
+		return
+	}
+	config, err := s.buildCloudOrganizeConfig(ctx)
+	if err != nil {
+		s.log.Warn("cloud organize config error", zap.Error(err))
+		return
+	}
+	s.log.Info("cloud organize scheduled start",
+		zap.String("source", config.SourcePath),
+		zap.String("target", config.TargetPath))
+	if _, err := s.cloudOrganize.Organize(ctx, *config); err != nil {
+		s.log.Warn("cloud organize scheduled failed", zap.Error(err))
+	}
+}
+
+func (s *SchedulerService) buildCloudOrganizeConfig(ctx context.Context) (*CloudOrganizeConfig, error) {
+	get := func(key string) string {
+		v, _ := s.repo.Setting.Get(ctx, key)
+		return strings.TrimSpace(v)
+	}
+	srcAccount := get("organize.cloud_source_account_id")
+	srcPath := get("organize.cloud_source_path")
+	dstAccount := get("organize.cloud_target_account_id")
+	dstPath := get("organize.cloud_target_path")
+	if srcAccount == "" || srcPath == "" || dstAccount == "" || dstPath == "" {
+		return nil, fmt.Errorf("cloud organize settings incomplete")
+	}
+	return &CloudOrganizeConfig{
+		SourceAccountID: srcAccount,
+		SourceProvider:  get("organize.cloud_source_provider"),
+		SourcePath:      srcPath,
+		TargetAccountID: dstAccount,
+		TargetProvider:  get("organize.cloud_target_provider"),
+		TargetPath:      dstPath,
+		VideoExt:        get("organize.cloud_video_ext"),
+		OverwriteMode:   get("organize.cloud_overwrite_mode"),
+	}, nil
+}
+
+func (s *SchedulerService) cloudOrganizeAutoEnabled(ctx context.Context) bool {
+	if s.repo == nil || s.repo.Setting == nil {
+		return false
+	}
+	v, err := s.repo.Setting.Get(ctx, "organize.cloud_auto")
+	if err != nil {
+		return false
+	}
+	return parseBoolSetting(v, false)
+}
+
+func (s *SchedulerService) cloudOrganizeCron(ctx context.Context) string {
+	if s.repo == nil || s.repo.Setting == nil {
+		return ""
+	}
+	v, _ := s.repo.Setting.Get(ctx, "organize.cloud_cron")
+	return strings.TrimSpace(v)
+}
+
+func (s *SchedulerService) cloudOrganizeInterval(ctx context.Context) time.Duration {
+	const fallback = 30 * time.Minute
+	if s.repo == nil || s.repo.Setting == nil {
+		return fallback
+	}
+	v, err := s.repo.Setting.Get(ctx, "organize.cloud_interval_seconds")
 	if err != nil {
 		return fallback
 	}

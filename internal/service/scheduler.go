@@ -34,6 +34,7 @@ type SchedulerService struct {
 	transcoder       *TranscoderService
 	organizer        *OrganizerService
 	organizePipeline *OrganizePipelineService
+	cloudOrganize    *cloudOrganizeService
 	hub              *Hub
 	tasks            *TaskTrackerService
 	cacheDir         string
@@ -57,6 +58,10 @@ func (s *SchedulerService) SetTaskTracker(tasks *TaskTrackerService) {
 
 func (s *SchedulerService) SetOrganizePipeline(pipeline *OrganizePipelineService) {
 	s.organizePipeline = pipeline
+}
+
+func (s *SchedulerService) SetCloudOrganize(co *cloudOrganizeService) {
+	s.cloudOrganize = co
 }
 
 func (s *SchedulerService) SetImagesMaxSizeMBProvider(fn func() int) {
@@ -142,6 +147,8 @@ func (s *SchedulerService) Start(ctx context.Context) {
 		}
 		helper.Go(s.log, "scheduler.loop."+j.name, func() { s.loopWithInitialDelay(ctx, j, initialDelay) })
 	}
+	// 云盘整理定时任务：支持 cron 和间隔两种模式
+	helper.Go(s.log, "scheduler.cloudOrganizeLoop", func() { s.cloudOrganizeLoop(ctx) })
 }
 
 // Stop signals every job loop to exit on the next tick.

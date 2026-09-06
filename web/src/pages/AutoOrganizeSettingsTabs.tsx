@@ -336,6 +336,37 @@ export function AutoOrganizeCloudTab({ config, onConfigChange }: AutoOrganizeTab
         </label>
       </div>
 
+      {/* 定时整理配置 */}
+      <div className="space-y-3 rounded-2xl border border-gray-200 p-4">
+        <h4 className="text-sm font-semibold text-ink-600">定时整理</h4>
+        <div className="flex flex-wrap items-center gap-3">
+          <BooleanSetting config={config} settingKey="cloudAuto" label="启用定时云盘整理" onConfigChange={onConfigChange} />
+        </div>
+        <div className="grid gap-3 lg:grid-cols-2">
+          <label className="space-y-1">
+            <span className="text-xs text-ink-50">Cron 表达式（优先于间隔）</span>
+            <input
+              className="input-base w-full font-mono text-xs"
+              placeholder="例如 0 */6 * * *（每6小时），留空则按间隔"
+              value={config.cloudCron}
+              onChange={(event) => onConfigChange('cloudCron', event.target.value)}
+            />
+            <p className="text-xs text-sand-500">5段格式：分 时 日 月 周</p>
+          </label>
+          <label className="space-y-1">
+            <span className="text-xs text-ink-50">间隔秒数（cron 为空时生效）</span>
+            <input
+              type="number"
+              min={60}
+              className="input-base w-full"
+              value={config.cloudIntervalSeconds}
+              onChange={(event) => onConfigChange('cloudIntervalSeconds', event.target.value)}
+            />
+            <p className="text-xs text-sand-500">最小 60 秒，默认 1800 秒</p>
+          </label>
+        </div>
+      </div>
+
       {browseTarget && selectedAccountId && (
         <StrmDirBrowserDialog
           accountId={selectedAccountId}
